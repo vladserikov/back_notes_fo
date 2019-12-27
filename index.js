@@ -1,49 +1,48 @@
+require('dotenv').config()
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const Note = require('./note');
+
+
+// if (process.argv.length < 3) {
+//     console.log('give pass as arument');
+//     process.exit()
+// }
+
+
+// mongoose.connect(url, {
+//     useNewUrlParser: true
+// })
+
+// const Note = mongoose.model("Note", noteShchema);
+
 
 app.use(cors())
 app.use(bodyParser.json())
+app.use(express.static('build'))
 
-let notes = [
-    {
-        id: 1,
-        content: "HTML is easy",
-        date: "2019-05-30T17:30:31.098Z",
-        important: true
-    },
-    {
-        id: 2,
-        content: "Browser can execute only Javascript",
-        date: "2019-05-30T18:39:34.091Z",
-        important: false
-    },
-    {
-        id: 3,
-        content: "GET and POST are the most important methods of HTTP protocol",
-        date: "2019-05-30T19:20:14.298Z",
-        important: true
-    }
-]
 
-app.get('/', (req, res) => {
-    res.send('<h1>Hello world</h1>')
+// app.get('/', (req, res) => {
+//     res.send('<h1>Hello world</h1>')
+// })
+
+app.get('/api/notes', (req, res) => {
+    Note.find({}).then(notes => {
+        console.log('send data');        
+        res.json(notes.map(note => note.toJSON()))
+    })
 })
 
-app.get('/notes', (req, res) => {
-    res.json(notes)
-})
-
-app.get('/notes/:id', (req, res) => {
-    const id = Number(req.params.id);
-    console.log(id, typeof id)
-    const note = notes.find(note => note.id === id);
-    if (note) {
-        res.json(note)   
-    } else {
-        res.status(404).end()
-    }
+app.get('/api/notes/:id', (req, res) => {
+    Note.findById(req.params.id).then(note => {
+        res.json(note.toJSON())
+    })
+    .catch(err => {
+        console.log(err);
+        res.status(404).end();
+    })
 })
 
 app.delete('/notes/:id', (req, res) => {
@@ -64,19 +63,24 @@ app.post('/notes', (req, res) => {
         return res.status(400).json({error: 'content missing'})
     }
 
-    const note = {
+    const note = new Note( {
         content: body.content,
         important: body.important || false,
         date: new Date(),
         id: generateId()
-    }
+    })
     
-    notes = notes.concat(note)
-    
-    res.json(note)
+    note.save().then(noteSave => {
+        res.json(noteSave.toJSON())
+    })
 })
 
-const PORT = process.env.PORT || 3001;
+// app.put('/notes/:id', (req, res) => {
+//     const body = req.body;
+
+// })
+
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
     console.log(`Start server on ${PORT}`)
 })
