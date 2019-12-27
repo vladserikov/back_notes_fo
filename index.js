@@ -16,6 +16,10 @@ app.get('/api/notes', (req, res) => {
     })
 })
 
+app.get('/', (req, res) => {
+    res.send('<h1>Start project</h1>')
+})
+
 app.get('/api/notes/:id', (req, res) => {
     Note.findById(req.params.id).then(note => {
         if (note) {
