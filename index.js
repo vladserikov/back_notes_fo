@@ -5,59 +5,41 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const Note = require('./note');
 
-
-// if (process.argv.length < 3) {
-//     console.log('give pass as arument');
-//     process.exit()
-// }
-
-
-// mongoose.connect(url, {
-//     useNewUrlParser: true
-// })
-
-// const Note = mongoose.model("Note", noteShchema);
-
-
-app.use(cors())
-app.use(bodyParser.json())
 app.use(express.static('build'))
+app.use(bodyParser.json())
+app.use(cors())
 
-
-// app.get('/', (req, res) => {
-//     res.send('<h1>Hello world</h1>')
-// })
 
 app.get('/api/notes', (req, res) => {
-    Note.find({}).then(notes => {
-        console.log('send data');        
+    Note.find({}).then(notes => {    
         res.json(notes.map(note => note.toJSON()))
     })
 })
 
 app.get('/api/notes/:id', (req, res) => {
     Note.findById(req.params.id).then(note => {
-        res.json(note.toJSON())
+        if (note) {
+            res.json(note.toJSON())
+        } else {
+            res.status(404).end()
+        }
     })
     .catch(err => {
         console.log(err);
-        res.status(404).end();
+        res.status(400).send({error: 'malformed id'});
     })
 })
 
-app.delete('/notes/:id', (req, res) => {
-    const id = Number(req.params.id);
-    notes = notes.filter(note => note.id !== id)
 
-    res.status(204).end()
+app.delete('/api/notes/:id', (req, res, next) => {
+    Note.findByIdAndDelete(req.params.id)
+        .then(result => {
+            res.status(204).end()
+        })
+        .catch(err => next(err))
 })
 
-const generateId = () => {
-    const maxId = notes.length > 0 ? Math.max(...notes.map(note => note.id)) : 0
-    return maxId + 1
-}
-
-app.post('/notes', (req, res) => {
+app.post('/api/notes', (req, res) => {
     const body = req.body;
     if (!body.content) {
         return res.status(400).json({error: 'content missing'})
@@ -66,8 +48,7 @@ app.post('/notes', (req, res) => {
     const note = new Note( {
         content: body.content,
         important: body.important || false,
-        date: new Date(),
-        id: generateId()
+        date: new Date()
     })
     
     note.save().then(noteSave => {
@@ -75,10 +56,37 @@ app.post('/notes', (req, res) => {
     })
 })
 
-// app.put('/notes/:id', (req, res) => {
-//     const body = req.body;
+app.put('/api/notes/:id', (req, res, next) => {
+    const body = req.body;
 
-// })
+    const note = {
+        content: body.content,
+        important: body.important
+    }
+
+    Note.findByIdAndUpdate(req.params.id, note, {new: true})
+        .then(updateNote => {
+            res.json(updateNote.toJSON())
+        })
+        .catch(err => next(err))
+})
+
+const uknowEndPoint = (req, res) => {
+    res.status(400).send({ error: 'unknow endpoint' })
+}
+
+app.use(uknowEndPoint)
+
+const errorHandle = (error, req, res, next) => {
+    console.error(error.message)
+
+    if (error.name === 'CastError' && error.kind == 'ObjectId') {
+        return res.status(400).send({ error: 'malformatted id'})
+    }
+    next(error)
+}
+
+app.use(errorHandle)
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
