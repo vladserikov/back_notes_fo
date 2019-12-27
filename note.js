@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 mongoose.set('useFindAndModify', false)
-const url = process.env.MONGODB_URL
+const url = process.env.MONGODB_URL || 'mongodb+srv://fullstack:qwerty1234@cluster0-rrpmz.mongodb.net/note-app?retryWrites=true&w=majority'
 
 console.log('conection to', url);
 
