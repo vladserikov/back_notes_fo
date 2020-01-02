@@ -9,15 +9,15 @@ app.use(express.static('build'))
 app.use(bodyParser.json())
 app.use(cors())
 
+// app.get('/', (req, res) => {
+//     res.send('<h1>Start project</h1>')
+// })
+
 
 app.get('/api/notes', (req, res) => {
     Note.find({}).then(notes => {    
         res.json(notes.map(note => note.toJSON()))
     })
-})
-
-app.get('/', (req, res) => {
-    res.send('<h1>Start project</h1>')
 })
 
 app.get('/api/notes/:id', (req, res) => {
@@ -43,9 +43,9 @@ app.delete('/api/notes/:id', (req, res, next) => {
         .catch(err => next(err))
 })
 
-app.post('/api/notes', (req, res) => {
+app.post('/api/notes', (req, res, next) => {
     const body = req.body;
-    if (!body.content) {
+    if (body.content === 'undefined') {
         return res.status(400).json({error: 'content missing'})
     }
 
@@ -55,9 +55,12 @@ app.post('/api/notes', (req, res) => {
         date: new Date()
     })
     
-    note.save().then(noteSave => {
-        res.json(noteSave.toJSON())
-    })
+    note.save()
+        .then(noteSave => noteSave.toJSON())
+        .then(saveAndFormated => {
+            res.json(saveAndFormated)
+        })
+        .catch(err => next(err))
 })
 
 app.put('/api/notes/:id', (req, res, next) => {
@@ -86,6 +89,8 @@ const errorHandle = (error, req, res, next) => {
 
     if (error.name === 'CastError' && error.kind == 'ObjectId') {
         return res.status(400).send({ error: 'malformatted id'})
+    } else if(error.name === 'ValidationError'){
+        return res.status(400).json({ error: error.message })
     }
     next(error)
 }

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 mongoose.set('useFindAndModify', false)
-const url = process.env.MONGODB_URL || 'mongodb+srv://fullstack:qwerty1234@cluster0-rrpmz.mongodb.net/note-app?retryWrites=true&w=majority'
+const url = process.env.MONGODB_URL
 
 console.log('conection to', url);
 
@@ -14,8 +14,15 @@ mongoose.connect(url, { useUnifiedTopology: true,useNewUrlParser: true})
 
 
 const noteShchema = new mongoose.Schema({
-    content: String,
-    date: Date,
+    content: {
+        type: String,
+        minlength: 5,
+        required: true
+    },
+    date: {
+        type: Date,
+        required: true
+    },
     important: Boolean,
 })
 
